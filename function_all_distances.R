@@ -42,6 +42,7 @@ my_wards <- function(x, dist) {
     ess_direct(c(L[1], L[2])) - ess_direct(L[1]) - ess_direct(L[2])
   }
   my_mean <- function(combo) {
+    combo <- unlist(str_split(combo, ","))
     x_mean <- colMeans(x_current[combo, ])
   }
   
@@ -78,7 +79,7 @@ my_wards <- function(x, dist) {
     d_min <- min(d_combos)
     c_rem <- combos[d_combos  == d_min] # clusters to combine
     # merges[i] <- list(d_combos) # store the distance between the merging clusters
-    ##################merges[i] <- d_min # if only store the minimum ditance
+    merges[i] <- d_min # if only store the minimum ditance
     c_rem <- as.character(unlist(c_rem))
     c_new <- str_c(unlist(c_rem), collapse = ",")
     clusters <-
@@ -86,7 +87,7 @@ my_wards <- function(x, dist) {
     clusters <- c(clusters, c_new) # add new merged cluster
     x_rows <- c(x_rows, c_new) # add merged cluster to x_rows
     x_current <- x_current[x_rows,] # new x_current
-    ##################names[i] <- str_c(c_rem, collapse = " and ")
+    names[i] <- str_c(c_rem, collapse = " and ")
     # merges[i][[1]] <- sort(merges[i][[1]]) # if storing all distances
   }
   names(merges) <- names
