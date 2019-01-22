@@ -38,27 +38,32 @@ d2RQ == test
 
 # quite close, I should write a function for doing this to check over multiple merges.
 ##################################################
-set.seed(898)
-rows <- sample(1:nrow(iris), size = 5)
-x <- iris[rows, 1:2] # sample 5 lines of iris as example data
-x <- as.data.frame(scale(x)) # standardise to mean = 0 sd = 1
-rownames(x) <- as.character(1:nrow(x))
+
+
+x %>% ggplot(aes(x = Sepal.Length, y = Sepal.Width, label = rownames(x))) +
+  geom_point(shape=15,color="white",size=6)+geom_text()
+
+dg <- daisy(x, metric = "euclidean", stand = TRUE)
+ag <- agnes(x, method = "ward", stand = TRUE)
+sort(ag$height)
+plot(ag)
+
+
 
 #ward_gower <- function(x) {
   #### first merge
   
-  #levs <- nrow(x) - 1
-  #x_current <- x
-  #d_current <- daisy(x, metric = "gower", stand = FALSE)
-  #C<-c("1","2")
+
+
+
 
   #for (i in 1:levs) {
-    combos <- as.data.frame(t(combinations(x = 1:nrow(x), k = 2)))
+
     ess_direct <- function(C) {
+      C <- unlist(str_split(C, ","))
       if (length(C) == 1) return(0) else {
       mean_i <- nrow(x) + 1 # the index for the mean row
-      #x_C <- x[C, ] # keep only samples in cluster C
-      x_mean <- colMeans(x[C,]) # compute mean of sample C
+      x_mean <- colMeans(x[C,]) # compute mean of cluster C
       x_C <- rbind(x, x_mean) # samples and mean in one dataset
       d_C <- daisy(x_C, metric = "gower", stand = FALSE) # compute gower distances
       d_C <- as.matrix(d_C)[mean_i,C] # keep only the row of distances to mean and columns in cluster
@@ -68,12 +73,38 @@ rownames(x) <- as.character(1:nrow(x))
     change_ess_direct <- function(C) {
       ess_direct(c(C[1], C[2])) - ess_direct(C[1]) - ess_direct(C[2])
     }
-    lapply(combos, change_ess_direct)
+    
+    
+    set.seed(898)
+    rows <- sample(1:nrow(iris), size = 5)
+    x <- iris[rows, 1:2] # sample 5 lines of iris as example data
+    x <- as.data.frame(scale(x)) # standardise to mean = 0 sd = 1
+    rownames(x) <- as.character(1:nrow(x))
+    clusters <- as.character(1:nrow(x))
+    
+    levs <- nrow(x) - 1
+    merges <- vector(mode = "list", length = levs)
+    names <- vector(mode = "list", length = levs)
+    
+    for (i in 1:levs) {
+    combos <- as.data.frame(t(combinations(x = clusters, k = 2))) %>%
+      mutate_all(as.character) # store as character for when clusters get bigger
+    d_combos <- lapply(combos, change_ess_direct)
+    d_min <- min(unlist(d_combos))
+    c_rem <- combos[d_combos  == d_min] # clusters to combine
+    merges[i] <-  d_min # store the distance between the merging clusters
+    c_rem <- as.character(unlist(c_rem))
+    c_new <- str_c(unlist(c_rem), collapse = ",")
+    clusters <- clusters[!(clusters %in% c_rem)] # remove the merged clusters
+    clusters <- c(clusters, c_new) # add new merged cluster
+    names[i] <- str_c(c_rem, collapse = " and ")
+    }
+    names(merges) <- names
     
 
   #}
   
-  
+#############################################  
   d <- daisy(x, metric = "gower", stand = TRUE)
   dmin <- min(d)
   d <- as.matrix(d)
