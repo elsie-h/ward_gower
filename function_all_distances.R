@@ -71,8 +71,8 @@ my_wards <- function(x, dist) {
 
 # example data
 set.seed(898)
-rows <- sample(1:nrow(iris), size = 100)
-x <- iris[rows, 1:4] # sample 5 lines of iris as example data
+rows <- sample(1:nrow(iris), size = 5)
+x <- iris[rows, 1:2] # sample 5 lines of iris as example data
 x <- as.data.frame(scale(x)) # standardise to mean = 0 sd = 1
 rownames(x) <- as.character(1:nrow(x))
 
