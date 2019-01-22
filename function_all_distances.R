@@ -27,7 +27,7 @@ my_wards <- function(x, dist) {
       x_mean <- colMeans(x[C, ]) # compute mean of cluster C
       x_C <- rbind(x, x_mean) # samples and mean in one dataset
       d_C <-
-        daisy(x_C, metric = dist, stand = FALSE) # compute gower distances
+        daisy(x_C, metric = "euclidean", stand = FALSE) # compute distances
       d_C <-
         as.matrix(d_C)[mean_i, C] # keep only the row of distances to mean and columns in cluster
       return(sum(d_C * d_C)) # return sum over square of all distances to mean
@@ -71,8 +71,8 @@ my_wards <- function(x, dist) {
 
 # example data
 set.seed(898)
-rows <- sample(1:nrow(iris), size = 10)
-x <- iris[rows, 1:4] # sample 5 lines of iris as example data
+rows <- sample(1:nrow(iris), size = 5)
+x <- iris[rows, 1:2] # sample 5 lines of iris as example data
 x <- as.data.frame(scale(x)) # standardise to mean = 0 sd = 1
 rownames(x) <- as.character(1:nrow(x))
 
