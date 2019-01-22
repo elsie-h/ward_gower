@@ -66,7 +66,7 @@ my_wards <- function(x, dist) {
     means <- sapply(combos, my_mean)
     means <- as.data.frame(t(means))
     x_current <- rbind(x_current, means)
-    d_current <- daisy(x_current, metric = "euclidean", stand = FALSE)
+    d_current <- daisy(x_current, metric = dist, stand = FALSE)
     d_current <- as.matrix(d_current)
     # calculate all change_ess_direct for all combos
     d_combos <- lapply(combos, change_ess_direct)
@@ -95,12 +95,70 @@ my_wards <- function(x, dist) {
 }
 ################################################################################
 
+################################## check times for euclidean distance
 # example data
 set.seed(898)
-rows <- sample(1:nrow(iris), size = 5)
-x <- iris[rows, 1:2] # sample 5 lines of iris as example data
+rows <- sample(1:nrow(iris), size = 10)
+x <- iris[rows, 1:4] # sample 5 lines of iris as example data
 x <- as.data.frame(scale(x)) # standardise to mean = 0 sd = 1
 rownames(x) <- as.character(1:nrow(x))
+
+system.time(merges_euc_10 <- my_wards(x, dist = "euclidean"))
+# 0.133 seconds
+
+set.seed(898)
+rows <- sample(1:nrow(iris), size = 100)
+x <- iris[rows, 1:4] # sample 5 lines of iris as example data
+x <- as.data.frame(scale(x)) # standardise to mean = 0 sd = 1
+rownames(x) <- as.character(1:nrow(x))
+
+system.time(merges_euc_100 <- my_wards(x, dist = "euclidean"))
+# 2403.233 seconds
+
+################################## check times
+
+# compare gower with my_wards and agnes
+set.seed(898)
+rows <- sample(1:nrow(iris), size = 10)
+x <- iris[rows, 1:4] # sample 5 lines of iris as example data
+x <- as.data.frame(scale(x)) # standardise to mean = 0 sd = 1
+rownames(x) <- as.character(1:nrow(x))
+
+time_10 <- system.time(merges_gow_10 <- my_wards(x, dist = "gower"))
+
+dist_gow_10 <- daisy(x, metric = "gower", stand = FALSE)
+ag_gow_10 <- agnes(dist_gow_10, method = "ward", stand = FALSE)
+sort(ag_gow_10$height)
+#plot(ag_gow)
+
+# compare gower with my_wards and agnes
+set.seed(898)
+rows <- sample(1:nrow(iris), size = 100)
+x <- iris[rows, 1:4] # sample 5 lines of iris as example data
+x <- as.data.frame(scale(x)) # standardise to mean = 0 sd = 1
+rownames(x) <- as.character(1:nrow(x))
+
+time_100 <- system.time(merges_gow_100 <- my_wards(x, dist = "gower"))
+
+dist_gow_100 <- daisy(x, metric = "gower", stand = FALSE)
+ag_gow_100 <- agnes(dist_gow_100, method = "ward", stand = FALSE)
+sort(ag_gow_100$height)
+#plot(ag_gow)
+
+##################################
+clus2 <- names(merges_gow_100[99])
+clus2 <- str_split(clus2, " and ")
+clus2 <- clus2[[1]]
+clus2[1] <- str_split(clus2[1], ",")
+clus2[2] <- str_split(clus2[2], ",")
+clus2_data1 <- data.frame(ID = clus2[1], clus = 1)
+clus2_data2 <- data.frame(ID = clus2[2], clus = 2)
+names(clus2_data1) <- c("ID", "clus")
+names(clus2_data2) <- c("ID", "clus")
+clus2_data <- rbind(clus2_data1, clus2_data2)
+clus2_data %>% group_by(clus) %>% count()
+
+##################################
 
 merges_gow <- my_wards(x, dist = "gower")
 merges_euc <- my_wards(x, dist = "euclidean")
