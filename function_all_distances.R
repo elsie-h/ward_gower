@@ -19,10 +19,13 @@ my_wards <- function(x, dist) {
   # function to compute the error sum of squares for cluster C
   # sum of gower distances between all samples in a cluster to the cluster centroid (mean)
   ess_direct <- function(C) {
+    mean_row <- str_c("mean(", str_c(C, collapse = ","), ")")
     C <- unlist(str_split(C, ","))
     if (length(C) == 1)
       return(0)
     else {
+      # keep the clusters as columns and the mean as the row
+      d_C <- d_current []
       mean_i <- nrow(x) + 1 # the index for the mean row
       x_mean <- colMeans(x[C, ]) # compute mean of cluster C
       x_C <- rbind(x, x_mean) # samples and mean in one dataset
@@ -43,10 +46,28 @@ my_wards <- function(x, dist) {
   names <- vector(mode = "list", length = levs)
   clusters <- as.character(1:nrow(x))
   
+  # take the first merge outside the loop??
+  
   for (i in 1:levs) {
+    #### calculating change_ess_direct
+    # now create just one distance matrix for each level.
     combos <- as.data.frame(t(combinations(x = clusters, k = 2))) %>%
-      mutate_all(as.character) # store as character for when clusters get bigger
+      mutate_all(as.character) # cluster names stored as characters, e.g. "1" or "2,3"
+    names(combos) <-
+      unname(apply(as.matrix(combos), 2, function(x)
+        str_c("mean(", str_c(x, collapse = ","), ")")))
+    # here is where we compute the distance matrix for lev.
+    # for each entry in combo, calculate cluster mean and append to x
+    my_mean <- function(combo) {
+      x_mean <- colMeans(x[combo, ])
+    }
+    means <- sapply(combos, my_mean)
+    means <- as.data.frame(t(means))
+    x_current <- rbind(x, means)
+    d_current <- daisy(x_current, metric = "euclidean", stand = FALSE)
+    d_current <- as.matrix(d_current)
     d_combos <- lapply(combos, change_ess_direct)
+    #### storing results & prepping for next iteration
     names(d_combos) <-
       unname(apply(as.matrix(combos), 2, function(x)
         str_c(x, collapse = " and ")))
@@ -71,8 +92,8 @@ my_wards <- function(x, dist) {
 
 # example data
 set.seed(898)
-rows <- sample(1:nrow(iris), size = 100)
-x <- iris[rows, 1:4] # sample 5 lines of iris as example data
+rows <- sample(1:nrow(iris), size = 5)
+x <- iris[rows, 1:2] # sample 5 lines of iris as example data
 x <- as.data.frame(scale(x)) # standardise to mean = 0 sd = 1
 rownames(x) <- as.character(1:nrow(x))
 
