@@ -26,7 +26,7 @@ my_wards <- function(x, dist) {
       return(0)
     else {
       # keep the clusters as columns and the mean as the row
-      d_current <- d_current[C, C_ind]
+      d <- d_current[C, C_ind]
       # mean_i <- nrow(x) + 1 # the index for the mean row
       # x_mean <- colMeans(x[C, ]) # compute mean of cluster C
       # x_C <- rbind(x, x_mean) # samples and mean in one dataset
@@ -34,7 +34,7 @@ my_wards <- function(x, dist) {
       #   daisy(x_C, metric = dist, stand = FALSE) # compute gower distances
       # d_C <-
       #   as.matrix(d_C)[mean_i, C] # keep only the row of distances to mean and columns in cluster
-      return(sum(d_current*d_current)) # return sum over square of all distances to mean
+      return(sum(d*d)) # return sum over square of all distances to mean
     }
   }
   # function to compute the error sum of squares for merging two clusters in list L
@@ -51,11 +51,6 @@ my_wards <- function(x, dist) {
   clusters <- as.character(1:nrow(x))
   x_rows <- as.character(1:nrow(x))
   x_current <- x
-  
-  # take the first merge outside the loop?? no use if statement in loop
-  # it's ok as first round will always have singleton clusters,
-  # so just make sure it works with no previous clusters in this situ
-  # then the cluster merge is added at end of loop, so will be there for next
   
   for (i in 1:levs) {
     #### calculating change_ess_direct
@@ -83,7 +78,7 @@ my_wards <- function(x, dist) {
     d_min <- min(d_combos)
     c_rem <- combos[d_combos  == d_min] # clusters to combine
     # merges[i] <- list(d_combos) # store the distance between the merging clusters
-    merges[i] <- d_min # if only store the minimum ditance
+    ##################merges[i] <- d_min # if only store the minimum ditance
     c_rem <- as.character(unlist(c_rem))
     c_new <- str_c(unlist(c_rem), collapse = ",")
     clusters <-
@@ -91,7 +86,7 @@ my_wards <- function(x, dist) {
     clusters <- c(clusters, c_new) # add new merged cluster
     x_rows <- c(x_rows, c_new) # add merged cluster to x_rows
     x_current <- x_current[x_rows,] # new x_current
-    names[i] <- str_c(c_rem, collapse = " and ")
+    ##################names[i] <- str_c(c_rem, collapse = " and ")
     # merges[i][[1]] <- sort(merges[i][[1]]) # if storing all distances
   }
   names(merges) <- names
