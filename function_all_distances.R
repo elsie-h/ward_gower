@@ -20,6 +20,7 @@ my_wards <- function(x, dist) {
   # sum of gower distances between all samples in a cluster to the cluster centroid (mean)
   ess_direct <- function(C) {
     #mean_row <- str_c("mean(", str_c(C, collapse = ","), ")")
+    C <- str_c(C, collapse = ",")
     C_ind <- unlist(str_split(C, ","))
     if (length(C_ind) == 1)
       return(0)
@@ -39,6 +40,9 @@ my_wards <- function(x, dist) {
   # function to compute the error sum of squares for merging two clusters in list L
   change_ess_direct <- function(L) {
     ess_direct(c(L[1], L[2])) - ess_direct(L[1]) - ess_direct(L[2])
+  }
+  my_mean <- function(combo) {
+    x_mean <- colMeans(x_current[combo, ])
   }
   
   levs <- nrow(x) - 1
@@ -63,9 +67,6 @@ my_wards <- function(x, dist) {
         str_c(x, collapse = ",")))
     # here is where we compute the distance matrix for lev.
     # for each entry in combo, calculate cluster mean and append to x
-    my_mean <- function(combo) {
-      x_mean <- colMeans(x_current[combo, ])
-    }
     means <- sapply(combos, my_mean)
     means <- as.data.frame(t(means))
     x_current <- rbind(x_current, means)
@@ -78,7 +79,7 @@ my_wards <- function(x, dist) {
       unname(apply(as.matrix(combos), 2, function(x)
         str_c(x, collapse = " and ")))
     d_combos <- unlist(d_combos)
-    d_combos <- ((2*d_combos)^0.5) # to match the distances in AGNES
+    d_combos <- (2*d_combos)^0.5 # to match the distances in AGNES
     d_min <- min(d_combos)
     c_rem <- combos[d_combos  == d_min] # clusters to combine
     # merges[i] <- list(d_combos) # store the distance between the merging clusters
