@@ -4,9 +4,9 @@
 ## Description: function for direct calculation of Ward's with Gower measure
 
 ## Packages:
-library(tidyverse)
-library(cluster) # for agnes and daisy
-library(arrangements) # for combinations
+require(tidyverse)
+require(cluster) # for daisy
+require(arrangements) # for combinations
 
 ################################################################################
 # my_wards function:
