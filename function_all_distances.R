@@ -8,69 +8,58 @@ library(tidyverse)
 library(cluster) # for agnes and daisy
 library(arrangements) # for combinations
 
-# re-write this function to reduce the number of distance matrices that are calculated
-# i.e. store all the means of possible merges, and then calculate one distance matrix,
-# rather than calculating a new distance matrix for each potential merge
-
 ################################################################################
 # my_wards function
 ################################################################################
 my_wards <- function(x, dist) {
-  # function to compute the error sum of squares for cluster C
-  # sum of gower distances between all samples in a cluster to the cluster centroid (mean)
+  # function to compute the ESS for cluster C
+  # sum of distances between all samples in a cluster to the cluster centroid
   ess_direct <- function(C) {
-    #mean_row <- str_c("mean(", str_c(C, collapse = ","), ")")
-    C <- str_c(C, collapse = ",")
-    C_ind <- unlist(str_split(C, ","))
-    if (length(C_ind) == 1)
+    C <- str_c(C, collapse = ",") # samples in cluster together e.g. "1,2,3"
+    C_ind <- unlist(str_split(C, ",")) # samples in cluster individually e.g. "1" "2" "3"
+    if (length(C_ind) == 1) # if singleton cluster ESS = 0
       return(0)
     else {
-      # keep the clusters as columns and the mean as the row
+      # keep the samples as columns and cluster centroid as row
+      # calculate distance matrix
       d <- d_current[C, C_ind]
-      # mean_i <- nrow(x) + 1 # the index for the mean row
-      # x_mean <- colMeans(x[C, ]) # compute mean of cluster C
-      # x_C <- rbind(x, x_mean) # samples and mean in one dataset
-      # d_C <-
-      #   daisy(x_C, metric = dist, stand = FALSE) # compute gower distances
-      # d_C <-
-      #   as.matrix(d_C)[mean_i, C] # keep only the row of distances to mean and columns in cluster
-      return(sum(d*d)) # return sum over square of all distances to mean
+      return(sum(d*d)) # sum over square of all distances to mean
     }
   }
-  # function to compute the error sum of squares for merging two clusters in list L
+  # function to compute the change in ESS for merging two clusters in list L
   change_ess_direct <- function(L) {
     ess_direct(c(L[1], L[2])) - ess_direct(L[1]) - ess_direct(L[2])
   }
+  # function to take column means for all possible cluster merges
   my_mean <- function(combo) {
     combo <- unlist(str_split(combo, ","))
     x_mean <- colMeans(x_current[combo, ])
   }
   
-  levs <- nrow(x) - 1
-  merges <- vector(mode = "list", length = levs)
-  names <- vector(mode = "list", length = levs)
-  clusters <- as.character(1:nrow(x))
-  x_rows <- as.character(1:nrow(x))
-  x_current <- x
+  levs <- nrow(x) - 1 # number of levels in hierarchy
+  merges <- vector(mode = "list", length = levs) # output of below loop
+  names <- vector(mode = "list", length = levs) # names for output
+  clusters <- as.character(1:nrow(x)) # current clusters (singletons at start)
+  x_rows <- as.character(1:nrow(x)) # rows of x
+  x_current <- x # data matrix for current level
   
   for (i in 1:levs) {
-    #### calculating change_ess_direct
-    # now create just one distance matrix for each level.
+    # all possible merges
     combos <- as.data.frame(t(combinations(x = clusters, k = 2))) %>%
-      mutate_all(as.character) # cluster names stored as characters, e.g. "1" or "2,3"
+      mutate_all(as.character) # cluster names stored as characters, e.g. "2,3"
     names(combos) <-
       unname(apply(as.matrix(combos), 2, function(x)
         str_c(x, collapse = ",")))
-    # here is where we compute the distance matrix for lev.
     # for each entry in combo, calculate cluster mean and append to x
     means <- sapply(combos, my_mean)
     means <- as.data.frame(t(means))
     x_current <- rbind(x_current, means)
+    # compute distance matrix for this level
     d_current <- daisy(x_current, metric = dist, stand = FALSE)
     d_current <- as.matrix(d_current)
     # calculate all change_ess_direct for all combos
     d_combos <- lapply(combos, change_ess_direct)
-    #### storing results & prepping for next iteration
+    # storing results & prep for next iteration
     names(d_combos) <-
       unname(apply(as.matrix(combos), 2, function(x)
         str_c(x, collapse = " and ")))
@@ -78,7 +67,6 @@ my_wards <- function(x, dist) {
     d_combos <- (2*d_combos)^0.5 # to match the distances in AGNES
     d_min <- min(d_combos)
     c_rem <- combos[d_combos  == d_min] # clusters to combine
-    # merges[i] <- list(d_combos) # store the distance between the merging clusters
     merges[i] <- d_min # if only store the minimum ditance
     c_rem <- as.character(unlist(c_rem))
     c_new <- str_c(unlist(c_rem), collapse = ",")
@@ -88,7 +76,6 @@ my_wards <- function(x, dist) {
     x_rows <- c(x_rows, c_new) # add merged cluster to x_rows
     x_current <- x_current[x_rows,] # new x_current
     names[i] <- str_c(c_rem, collapse = " and ")
-    # merges[i][[1]] <- sort(merges[i][[1]]) # if storing all distances
   }
   names(merges) <- names
   return(merges)
@@ -105,6 +92,7 @@ rownames(x) <- as.character(1:nrow(x))
 
 system.time(merges_euc_10 <- my_wards(x, dist = "euclidean"))
 # 0.133 seconds
+save(merges_euc_10, file = "merges_euc_10.RData")
 
 set.seed(898)
 rows <- sample(1:nrow(iris), size = 100)
@@ -114,6 +102,7 @@ rownames(x) <- as.character(1:nrow(x))
 
 system.time(merges_euc_100 <- my_wards(x, dist = "euclidean"))
 # 2403.233 seconds
+save(merges_euc_100, file = "merges_euc_100.RData")
 
 ################################## check times
 
@@ -125,6 +114,7 @@ x <- as.data.frame(scale(x)) # standardise to mean = 0 sd = 1
 rownames(x) <- as.character(1:nrow(x))
 
 time_10 <- system.time(merges_gow_10 <- my_wards(x, dist = "gower"))
+save(merges_gow_10, file = "merges_gow_10.RData")
 
 dist_gow_10 <- daisy(x, metric = "gower", stand = FALSE)
 ag_gow_10 <- agnes(dist_gow_10, method = "ward", stand = FALSE)
@@ -139,6 +129,7 @@ x <- as.data.frame(scale(x)) # standardise to mean = 0 sd = 1
 rownames(x) <- as.character(1:nrow(x))
 
 time_100 <- system.time(merges_gow_100 <- my_wards(x, dist = "gower"))
+save(merges_gow_100, file = "merges_gow_100.RData")
 
 dist_gow_100 <- daisy(x, metric = "gower", stand = FALSE)
 ag_gow_100 <- agnes(dist_gow_100, method = "ward", stand = FALSE)
