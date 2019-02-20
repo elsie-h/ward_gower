@@ -2,15 +2,17 @@
 title: "Using Gower’s similarity in Ward’s clustering"
 author: "Elsie Horne"
 date: "16/01/2019"
-output: word_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 # Introduction
 Ward's clustering is a popular agglomerative hierarchical technique for clustering data. At each level of the hierarchy, Ward's merges the two clusters that result in the smallest increase in error sum of squares between samples in the data and their corresponding cluster centres, i.e. the sum of squared euclidean distances between samples and corresponding cluster centres.
 
-Some studies have been identified which use Ward's algorithm, but start with a distance matrix calculated using the Gower distance. A limitation with this method is that, for speed, the function `cluster::agnes` uses properites of the Euclidean distance to avoid having to recalculate cluster centres at each level of the hierarchy. In the following example, we investigate whether using the Gower distance metric with `cluster::agnes` gives accurate results.
+Some studies have been identified which use Ward's algorithm, but start with a distance matrix calculated using the Gower distance. A limitation with this method is that, for speed, the function `cluster::agnes` uses properites of the Euclidean distance to avoid having to recalculate cluster centres then the corresponding distances at each level of the hierarchy. In the following example, we investigate whether using the Gower distance metric with `cluster::agnes` gives accurate results.
 
-**Note**: typically the rationale for using the Gower distance metric is that the data contains both continuous and categorical features. However, the example we give here uses only continuous features. When dealing with categorical data Ward's should be used with great caution, as the cluster centres will be calculated via the arithmetic mean, which is unlikely to be appropriate for categorical attributes.
+**Note**: typically the rationale for using the Gower distance metric is that the data contains both continuous and categorical features. However, the example we give here uses only continuous features. If Gower's distance were used in Ward's, it would involve calculating the distance between a categorical variable (e.g. 1) and the cluster mean of the categorical variable (e.g. 0.63). Therefore this variable would have to be treated as a continuous variable for the purposes of calculating Gower distances, in which case the Gower metric becomes equivalent to the range normalised Manhatton distance.
 
 # Example
 
@@ -60,6 +62,8 @@ ggplot(data = tmp) + geom_point(aes(x = V1, y = V2, colour = nci.labs))
 ## Dimensionality reduction
 
 As the dataset is very wide we first use PCA to reduce dimensions. Here we standardise the data and reduce it to 5 dimensions, as in the ISLR example.
+
+**Note:** It is necessary to standardise the data here as we are using the Euclidean distance. If we were only using the Gower metric this would not be necessary, as the Gower metric uses the range-normalised Manhatton distance for continuous variables so returns the same distance matrix for standardised and unstandardised data.
 
 ```{r pca}
 pr.out <- prcomp(nci.data, scale=TRUE)
