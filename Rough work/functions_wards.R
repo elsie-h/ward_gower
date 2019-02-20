@@ -1,7 +1,7 @@
 ## Author: Elsie Horne
 ## Date created: 21st Jan 2019
 
-## Description: function for direct calculation of Ward's with Gower measure
+## Description: function for direct calculation of Ward's
 
 ## Packages:
 require(tidyverse)
