@@ -2,7 +2,7 @@
 title: "Using Gower’s similarity in Ward’s clustering"
 author: "Elsie Horne"
 date: "16/01/2019"
-output: html_document
+output: rmarkdown::github_document
 ---
 
 # Introduction
