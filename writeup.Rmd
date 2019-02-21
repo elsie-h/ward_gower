@@ -2,23 +2,166 @@
 title: "Using Gower’s similarity in Ward’s clustering"
 author: "Elsie Horne"
 date: "16/01/2019"
-output: word_document
+output:
+  html_document:
+    df_print: paged
 ---
+
+# Introduction
+Ward's clustering is a popular agglomerative hierarchical technique for clustering data. At each level of the hierarchy, Ward's merges the two clusters that result in the smallest increase in error sum of squares between samples in the data and their corresponding cluster centres, i.e. the sum of squared euclidean distances between samples and corresponding cluster centres.
+
+Some studies have been identified which use Ward's algorithm, but start with a distance matrix calculated using the Gower distance. A limitation with this method is that, for speed, the function `cluster::agnes` uses properites of the Euclidean distance to avoid having to recalculate cluster centres then the corresponding distances at each level of the hierarchy. In the following example, we investigate whether using the Gower distance metric with `cluster::agnes` gives accurate results.
+
+**Note**: typically the rationale for using the Gower distance metric is that the data contains both continuous and categorical features. However, the example we give here uses only continuous features. If Gower's distance were used in Ward's, it would involve calculating the distance between a categorical variable (e.g. 1) and the cluster mean of the categorical variable (e.g. 0.63). Therefore this variable would have to be treated as a continuous variable for the purposes of calculating Gower distances, in which case the Gower metric becomes equivalent to the range normalised Manhatton distance.
+
+# Example
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
-
-```{r packages}
+```{r packages, include = FALSE}
 library(tidyverse)
-# library(cluster)
+library(cluster) # for agnes and daisy
+library(ISLR) # for the data
+library(ggdendro) # ggplot dendrogram
+library(Rtsne) # t-SNE
 ```
 
+The following line loads the functions that I've written to implement Ward's clustering computing a new distance matrix for each level of the hierarchy, rather than the approach taken in `cluster::agnes` which relies on properties of the Euclidean distance. The code for these functions is included in the appendix at the end of this document.
 
-```{r pressure, echo=FALSE}
 
+```{r functions}
+source("functions_wards.R")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+The data for this example is the NCI60 microarray data, loaded from the package `ISLR`. This example is adapted from '10.6 Lab 3: NCI60 Data Example' of 'Introduction to Statistical Learining' (ISLR).
+
+```{r data}
+nci.labs <- NCI60$labs
+nci.data <- NCI60$data
+dim(nci.data)
+```
+
+## Exploratory data analysis
+
+This data has `r ncol(nci.data)` features, so we use a projection technique called t-distributed stochastic neightbout embedding (t-SNE) tsne to visualise the data in 2 dimensions and get an initial feeling of whether there is some clustering corresponding to the `nci.labs`. The function `Rtsne` first reduces the data to 30 dimensions (`initial_dims = 30,`) using principal components analysis (PCA) before applying t-SNE to learn a 2-dimensional embedding (`dims = 2`). The Barnes-Hut approximation was not used (`theta = 0`) and the perplexity was set to 5, which is low as it is a small and sparsely distributed dataset. The 2-dimensional embedding of the data can be visualised in a scatter plot. The colours in the plot below correspond to the type of cancer (`nci.labs`). It looks as though there is some grouping in the data which corresonds to the type of cancer. We now investigate this further with cluster analysis.
+
+
+```{r tsne}
+tmp <- data.frame(nci.data, scale = TRUE)
+# tsne_30 <- Rtsne(tmp, dims = 2, initial_dims = 30, perplexity = 5, theta = 0, pca = TRUE)
+# save(tsne_30, file = "tsne_30.RData")
+load("tsne_30.RData")
+tmp <- as.data.frame(tsne_30$Y)
+tmp <- cbind(tmp, nci.labs)
+tmp <- tmp %>% mutate_at("nci.labs", as.factor)
+ggplot(data = tmp) + geom_point(aes(x = V1, y = V2, colour = nci.labs))
+```
+
+## Dimensionality reduction
+
+As the dataset is very wide we first use PCA to reduce dimensions. Here we standardise the data and reduce it to 5 dimensions, as in the ISLR example.
+
+**Note:** It is necessary to standardise the data here as we are using the Euclidean distance. If we were only using the Gower metric this would not be necessary, as the Gower metric uses the range-normalised Manhatton distance for continuous variables so returns the same distance matrix for standardised and unstandardised data.
+
+```{r pca}
+pr.out <- prcomp(nci.data, scale=TRUE)
+x <- pr.out$x[,1:5]
+rownames(x) <- 1:nrow(x)
+```
+
+## Cluster analysis
+
+### Euclidean distance
+First we compare results from `cluster::agnes` and `my_wards` using the Euclidean distance to ensure that they are identical.
+
+#### agnes
+
+```{r ag_euc}
+d_euc <- daisy(x, metric = "euclidean", stand = FALSE)
+ag_euc <- agnes(d_euc, method = "ward", stand = FALSE)
+```
+
+#### my_wards
+This taks a few minutes to run so has been saved and loaded.
+
+```{r my_euc}
+#my_euc <- my_wards(x, dist = "euclidean")
+#save(my_euc, file = "my_euc.RData")
+load("my_euc.RData")
+```
+
+Check all the distances between merges are the same.
+
+```{r comapre_euc}
+all(near(sort(ag_euc$height), unname(unlist(my_euc))))
+```
+
+The are, so when using the Euclidean matrix the two functions give the same solution.
+
+### Gower distance
+Now we try with the Gower distance.
+
+#### agnes
+
+```{r ag_gow, warning=FALSE}
+d_gow <- daisy(x, metric = "gower", stand = FALSE)
+ag_gow <- agnes(d_gow, method = "ward", stand = FALSE)
+```
+
+#### my_wards
+
+```{r my_gow}
+#my_gow <- my_wards(x, dist = "gower")
+#save(my_gow, file = "my_gow.RData")
+load("my_gow.RData")
+```
+
+Check if the distances afe all the same:
+
+```{r compare_gow}
+near(sort(ag_gow$height), unname(unlist(my_gow)))
+sort(ag_gow$height)/unname(unlist(my_gow))
+```
+
+This time some od the distances are different. The differences are not huge though, so take a look to see how it affects the custering.
+
+Use the dendrogram from the `agnes` clustering to select a `k` to compare solutions.
+
+```{r dend}
+ggdendrogram(ag_gow) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, size = rel(0.8)))
+```
+
+From the dendrogram of the agnes clustering, 5 clusters seems reasonable. Tabulate the 5 cluster solutions obtained from both functions.
+
+```{r clus5}
+ag_5 <- cutree(ag_gow, k = 5)
+my_5 <- my_clusters(my_gow, k = 5)
+
+table(ag_5, my_5)
+```
+
+Only 3 samples have been reallocated. Take a look at how this solution corresponds to the types of cancer.
+
+```{r labels}
+table(nci.labs, ag_5)
+table(nci.labs, my_5)
+```
+
+This has resulted in very minor changes - `my_wards` has grouped all 5 `CNS` cancers into one cluster while `agnes` has split them across two clusters (2|3). The split for `RENAL` from my_wards is 7|2 and 6|3 for agnes. Other than this the solutions are identical. 
+
+# Conclusions
+The differences between the solutions demonstrate that `agnes` does calucate the exact gower distances. In this example with 5 features and 64 samples the differences were fairly minor. However, caution should be taken when working with larger datasets.
+
+(I will complete another example, but `my_wards` is slow, so it is only feasible with small datasets.)
+
+# Appendix
+Below is the code for each of the functions.
+
+```{r source_code}
+my_wards
+my_clusters
+```
+
