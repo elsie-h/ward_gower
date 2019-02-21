@@ -2,9 +2,7 @@
 title: "Using Gower’s similarity in Ward’s clustering"
 author: "Elsie Horne"
 date: "16/01/2019"
-output:
-  html_document:
-    df_print: paged
+output: rmarkdown::github_document
 ---
 
 # Introduction
@@ -45,12 +43,7 @@ dim(nci.data)
 
 ## Exploratory data analysis
 
-<<<<<<< HEAD
-This data has `r ncol(nci.data)` features, so we use a projection technique called t-distributed stochastic neightbout embedding (t-SNE) tsne to visualise the data in 2 dimensions and get an initial feeling of whether there is some clustering corresponding to the `nci.labs`. The function `Rtsne` first reduces the data to 30 dimensions (`initial_dims = 30,`) using principal components analysis (PCA) before applying t-SNE to learn a 2-dimensional embedding (`dims = 2`). The 2-dimensional embedding of the data can be visualised in a scatter plot. The colours in the plot below correspond to the type of cancer (`nci.labs`). It looks as though there is some grouping in the data which corresonds to the type of cancer. We now investigate this further with cluster analysis.
-=======
 This data has `r ncol(nci.data)` features, so we use a projection technique called t-distributed stochastic neightbout embedding (t-SNE) tsne to visualise the data in 2 dimensions and get an initial feeling of whether there is some clustering corresponding to the `nci.labs`. The function `Rtsne` first reduces the data to 30 dimensions (`initial_dims = 30,`) using principal components analysis (PCA) before applying t-SNE to learn a 2-dimensional embedding (`dims = 2`). The Barnes-Hut approximation was not used (`theta = 0`) and the perplexity was set to 5, which is low as it is a small and sparsely distributed dataset. The 2-dimensional embedding of the data can be visualised in a scatter plot. The colours in the plot below correspond to the type of cancer (`nci.labs`). It looks as though there is some grouping in the data which corresonds to the type of cancer. We now investigate this further with cluster analysis.
->>>>>>> master
-
 
 ```{r tsne}
 tmp <- data.frame(nci.data, scale = TRUE)
@@ -157,15 +150,11 @@ table(nci.labs, my_5)
 This has resulted in very minor changes - `my_wards` has grouped all 5 `CNS` cancers into one cluster while `agnes` has split them across two clusters (2|3). The split for `RENAL` from my_wards is 7|2 and 6|3 for agnes. Other than this the solutions are identical. 
 
 # Conclusions
-<<<<<<< HEAD
-The differences betweent he solutions demonstrate that `agnes` does calucate the exact gower distances. In this example with 5 features and 64 samples the differences were fairly minor. However, caution should be taken when working with larger datasets.
 
-(I will complete another example, but `my_wards` is slow, so I think that datasets bigger than ~100 samples may be infeasible.)
-=======
 The differences between the solutions demonstrate that `agnes` does calucate the exact gower distances. In this example with 5 features and 64 samples the differences were fairly minor. However, caution should be taken when working with larger datasets.
 
 (I will complete another example, but `my_wards` is slow, so it is only feasible with small datasets.)
->>>>>>> master
+
 
 # Appendix
 Below is the code for each of the functions.
