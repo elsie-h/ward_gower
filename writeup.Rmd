@@ -1,5 +1,5 @@
 ---
-title: "Gower’s dissimilarity in hierachical clustering using Ward's method"
+title: "Gower’s dissimilarity in hierarchical clustering using Ward's method"
 author: "Elsie Horne"
 date: "16/01/2019"
 output: rmarkdown::github_document

@@ -1,4 +1,4 @@
-Gower’s dissimilarity in hierachical clustering using Ward’s method
+Gower’s dissimilarity in hierarchical clustering using Ward’s method
 ================
 Elsie Horne
 16/01/2019
@@ -374,4 +374,4 @@ my_clusters
     ##     x_r <- unname(unlist(arrange(x_r, V1)[2]))
     ##     return(x_r)
     ## }
-    ## <bytecode: 0x7fcf5cbdd898>
+    ## <bytecode: 0x7fef3b900860>
